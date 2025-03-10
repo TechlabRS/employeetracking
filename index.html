@@ -27,7 +27,121 @@
     <div id="attendance" class="content">Attendance Content</div>
     <div id="payments" class="content">Payments Content</div>
     <div id="report" class="content">Monthly Report Content</div>
-    <div id="expenses" class="content">Expense Tracker Content</div>
+    <div id="expenses" class="content">Expense Tracker Content
+        <h2>Expense & Income Tracker</h2>
+
+    <!-- Add New Task Section -->
+    <div class="section">
+        <h3>Add New Task/Project</h3>
+        <input type="text" id="taskName" placeholder="Task Name">
+        <label>Includes Material?</label>
+        <select id="includesMaterial">
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+        </select>
+        <input type="date" id="startDate">
+        <input type="date" id="endDate">
+        <button onclick="addTask()">Add Task</button>
+    </div>
+
+<!-- Task Details Section -->
+<div class="section">
+    <h3>Task Details</h3>
+    <label>Select Task:</label>
+    <select id="taskDetailsDropdown" onchange="showTaskDetails()"></select>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Task Name</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Includes Material</th>
+                <th>Total Income</th>
+                <th>Total Expenses</th>
+                <th>Profit/Loss</th>
+            </tr>
+        </thead>
+        <tbody id="taskDetailsTable"></tbody>
+    </table>
+</div>
+
+
+
+    <!-- Data Management Section -->
+<div class="section">
+    <h3>Data Management</h3>
+    <button onclick="clearData()">Clear All Data</button>
+    <button onclick="exportData()">Export Data</button>
+    <input type="file" id="importFile" accept=".json">
+    <button onclick="importData()">Import Data</button>
+</div>
+
+
+    <!-- Income Tracking Section -->
+    <div class="section">
+        <h3>Track Income</h3>
+        <select id="incomeTask"></select>
+        <input type="date" id="incomeDate">
+        <input type="number" id="incomeAmount" placeholder="Amount Received">
+        <button onclick="addIncome()">Add Income</button>
+        
+        <h4>Income History</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>Task</th>
+                    <th>Date</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody id="incomeHistory"></tbody>
+        </table>
+    </div>
+
+    <!-- Expense Tracking Section -->
+    <div class="section">
+        <h3>Track Expenses</h3>
+        <select id="expenseTask"></select>
+        <input type="text" id="expenseType" placeholder="Expense Type (e.g., Travel, Material)">
+        <input type="number" id="expenseAmount" placeholder="Amount Spent">
+        <button onclick="addExpense()">Add Expense</button>
+        
+        <h4>Expense History</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>Task</th>
+                    <th>Type</th>
+                    <th>Amount</th>
+                </tr>
+            </thead>
+            <tbody id="expenseHistory"></tbody>
+        </table>
+    </div>
+
+    <!-- Profit/Loss Analysis -->
+    <div class="section">
+        <h3>Profit/Loss Report</h3>
+        <label>Select Month:</label>
+        <input type="month" id="filterMonth" onchange="generateReport()">
+        <table>
+            <thead>
+                <tr>
+                    <th>Task</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Total Income</th>
+                    <th>Total Expenses</th>
+                    <th>Profit/Loss</th>
+                </tr>
+            </thead>
+            <tbody id="reportTable"></tbody>
+        </table>
+        <h4>Total Monthly Profit: ₹<span id="totalProfit">0</span></h4>
+        <h4>Total Monthly Loss: ₹<span id="totalLoss">0</span></h4>
+    </div>
+    </div>
 
     <script>
         function switchTab(evt, tabName) {
@@ -36,6 +150,312 @@
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             evt.currentTarget.classList.add('active');
         }
+    </script>
+
+    <script>
+        //for expense tracker code
+
+        let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+let incomes = JSON.parse(localStorage.getItem("incomes")) || [];
+let expenses = JSON.parse(localStorage.getItem("expenses")) || [];
+
+// Load data when page loads
+window.onload = function () {
+    updateTaskDropdowns();
+    updateIncomeHistory();
+    updateExpenseHistory();
+    generateReport();
+};
+
+// Save data to localStorage
+function saveData() {
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+    localStorage.setItem("incomes", JSON.stringify(incomes));
+    localStorage.setItem("expenses", JSON.stringify(expenses));
+}
+
+// Add Task
+function addTask() {
+    const name = document.getElementById("taskName").value;
+    const material = document.getElementById("includesMaterial").value;
+    const startDate = document.getElementById("startDate").value;
+    const endDate = document.getElementById("endDate").value;
+
+    if (!name || !startDate || !endDate) {
+        alert("Please fill all fields.");
+        return;
+    }
+
+    const task = { name, material, startDate, endDate };
+    tasks.push(task);
+
+    saveData();
+    updateTaskDropdowns();
+    updateTaskDetailsDropdown();
+    showTaskDetails();
+    alert("Task added!");
+}
+
+// Update dropdowns with tasks
+function updateTaskDropdowns() {
+    const incomeDropdown = document.getElementById("incomeTask");
+    const expenseDropdown = document.getElementById("expenseTask");
+
+    incomeDropdown.innerHTML = "";
+    expenseDropdown.innerHTML = "";
+
+    tasks.forEach((task, index) => {
+        const option = `<option value="${index}">${task.name}</option>`;
+        incomeDropdown.innerHTML += option;
+        expenseDropdown.innerHTML += option;
+    });
+}
+
+// Function to update Task Details dropdown
+function updateTaskDetailsDropdown() {
+    const dropdown = document.getElementById("taskDetailsDropdown");
+    dropdown.innerHTML = "";
+
+    tasks.forEach((task, index) => {
+        const option = document.createElement("option");
+        option.value = index;
+        option.textContent = task.name;
+        dropdown.appendChild(option);
+    });
+
+    if (tasks.length > 0) {
+        showTaskDetails();
+    }
+}
+
+// Function to show task details in a table
+function showTaskDetails() {
+    const index = document.getElementById("taskDetailsDropdown").value;
+    if (!tasks[index]) return;
+
+    const task = tasks[index];
+
+    // Calculate total income & expenses for the selected task
+    const taskIncome = incomes
+        .filter(i => i.taskIndex == index)
+        .reduce((sum, i) => sum + i.amount, 0);
+
+    const taskExpenses = expenses
+        .filter(e => e.taskIndex == index)
+        .reduce((sum, e) => sum + e.amount, 0);
+
+    const profitLoss = taskIncome - taskExpenses;
+
+    // Update task details in the table
+    document.getElementById("taskDetailsTable").innerHTML = `
+        <tr>
+            <td>${task.name}</td>
+            <td>${task.startDate}</td>
+            <td>${task.endDate}</td>
+            <td>${task.material}</td>
+            <td>₹${taskIncome}</td>
+            <td>₹${taskExpenses}</td>
+            <td style="color: ${profitLoss >= 0 ? 'green' : 'red'};">₹${profitLoss}</td>
+        </tr>
+    `;
+}
+
+// Call function on page load
+window.onload = function () {
+    updateTaskDetailsDropdown();
+};
+
+
+// Add Income
+function addIncome() {
+    const taskIndex = document.getElementById("incomeTask").value;
+    const amount = parseFloat(document.getElementById("incomeAmount").value);
+    const date = document.getElementById("incomeDate").value;
+
+    if (!date || isNaN(amount) || amount <= 0) {
+        alert("Enter valid date and amount.");
+        return;
+    }
+
+    incomes.push({ taskIndex, amount, date });
+
+    saveData();
+    updateIncomeHistory();
+    generateReport();
+}
+
+// Add Expense
+function addExpense() {
+    const taskIndex = document.getElementById("expenseTask").value;
+    const type = document.getElementById("expenseType").value;
+    const amount = parseFloat(document.getElementById("expenseAmount").value);
+
+    if (!type || isNaN(amount) || amount <= 0) {
+        alert("Enter valid expense type and amount.");
+        return;
+    }
+
+    expenses.push({ taskIndex, type, amount });
+
+    saveData();
+    updateExpenseHistory();
+    generateReport();
+}
+
+// Update income history table
+function updateIncomeHistory() {
+    const table = document.getElementById("incomeHistory");
+    table.innerHTML = incomes.map(income => 
+        `<tr><td>${tasks[income.taskIndex]?.name || "Deleted Task"}</td><td>${income.date}</td><td>₹${income.amount}</td></tr>`
+    ).join("");
+}
+
+// Update expense history table
+function updateExpenseHistory() {
+    const table = document.getElementById("expenseHistory");
+    table.innerHTML = expenses.map(expense => 
+        `<tr><td>${tasks[expense.taskIndex]?.name || "Deleted Task"}</td><td>${expense.type}</td><td>₹${expense.amount}</td></tr>`
+    ).join("");
+}
+
+// Generate Profit/Loss Report
+function generateReport() {
+    const selectedMonth = document.getElementById("filterMonth").value;
+    if (!selectedMonth) return;
+
+    let totalProfit = 0;
+    let totalLoss = 0;
+
+    const reportTable = document.getElementById("reportTable");
+    reportTable.innerHTML = "";
+
+    tasks.forEach((task, index) => {
+        // Filter incomes and expenses based on the selected month
+        let taskIncome = incomes
+            .filter(i => i.taskIndex == index && i.date.startsWith(selectedMonth))
+            .reduce((sum, i) => sum + i.amount, 0);
+
+        let taskExpenses = expenses
+            .filter(e => e.taskIndex == index && incomes.some(i => i.taskIndex == index && i.date.startsWith(selectedMonth)))
+            .reduce((sum, e) => sum + e.amount, 0);
+
+        let profitLoss = taskIncome - taskExpenses;
+
+        if (profitLoss >= 0) {
+            totalProfit += profitLoss;
+        } else {
+            totalLoss += Math.abs(profitLoss);
+        }
+
+        // Append to report table
+        reportTable.innerHTML += `
+            <tr>
+                <td>${task.name}</td>
+                <td>${task.startDate}</td>
+                <td>${task.endDate}</td>
+                <td>₹${taskIncome}</td>
+                <td>₹${taskExpenses}</td>
+                <td style="color: ${profitLoss >= 0 ? 'green' : 'red'};">₹${profitLoss}</td>
+            </tr>
+        `;
+    });
+
+    // Update total profit/loss
+    document.getElementById("totalProfit").innerText = `₹${totalProfit}`;
+    document.getElementById("totalLoss").innerText = `₹${totalLoss}`;
+}
+
+
+// Function to clear all stored data
+function clearData() {
+    if (confirm("Are you sure you want to delete all data? This cannot be undone!")) {
+        localStorage.removeItem("tasks");
+        localStorage.removeItem("incomes");
+        localStorage.removeItem("expenses");
+        
+        tasks = [];
+        incomes = [];
+        expenses = [];
+
+        updateTaskDropdowns();
+        updateIncomeHistory();
+        updateExpenseHistory();
+        generateReport();
+        
+        alert("All data has been cleared.");
+    }
+}
+
+// Function to export data as a JSON file
+function exportData() {
+    const data = {
+        tasks,
+        incomes,
+        expenses
+    };
+    const jsonData = JSON.stringify(data, null, 4);
+    const blob = new Blob([jsonData], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "data_backup.json";
+    a.click();
+}
+
+// Function to import data from a JSON file
+function importData() {
+    const fileInput = document.getElementById("importFile");
+    if (fileInput.files.length === 0) {
+        alert("Please select a JSON file to import.");
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function (event) {
+        try {
+            const importedData = JSON.parse(event.target.result);
+            
+            if (!importedData.tasks || !importedData.incomes || !importedData.expenses) {
+                throw new Error("Invalid JSON format!");
+            }
+
+            tasks = importedData.tasks;
+            incomes = importedData.incomes;
+            expenses = importedData.expenses;
+
+            saveData();
+            updateTaskDropdowns();
+            updateIncomeHistory();
+            updateExpenseHistory();
+            generateReport();
+
+            alert("Data imported successfully!");
+        } catch (error) {
+            alert("Failed to import data: " + error.message);
+        }
+    };
+
+    reader.readAsText(file);
+}
+
+
+// Set default values to current date for all date inputs
+window.onload = function () {
+    const today = new Date();
+    const formattedDate = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+    const formattedMonth = today.toISOString().slice(0, 7); // YYYY-MM format
+
+    document.getElementById("startDate").value = formattedDate;
+    document.getElementById("endDate").value = formattedDate;
+    document.getElementById("incomeDate").value = formattedDate;
+    document.getElementById("filterMonth").value = formattedMonth;
+
+    updateTaskDropdowns();
+    updateIncomeHistory();
+    updateExpenseHistory();
+    generateReport();
+};
     </script>
 </body>
 </html>
