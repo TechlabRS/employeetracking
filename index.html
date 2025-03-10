@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Management</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        .tabs { display: flex; background: #007bff; padding: 10px; }
+        .tab { flex: 1; text-align: center; padding: 10px; color: white; cursor: pointer; }
+        .tab:hover, .active { background: #0056b3; }
+        .content { padding: 20px; display: none; }
+        .show { display: block; }
+        @media (max-width: 600px) { .tabs { flex-direction: column; } }
+    </style>
+</head>
+<body>
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab(event, 'employee')">Employee Details</div>
+        <div class="tab" onclick="switchTab(event, 'attendance')">Attendance</div>
+        <div class="tab" onclick="switchTab(event, 'payments')">Payments</div>
+        <div class="tab" onclick="switchTab(event, 'report')">Monthly Report</div>
+        <div class="tab" onclick="switchTab(event, 'expenses')">Expense Tracker</div>
+    </div>
+
+    <div id="employee" class="content show">Employee Details Content</div>
+    <div id="attendance" class="content">Attendance Content</div>
+    <div id="payments" class="content">Payments Content</div>
+    <div id="report" class="content">Monthly Report Content</div>
+    <div id="expenses" class="content">Expense Tracker Content</div>
+
+    <script>
+        function switchTab(evt, tabName) {
+            document.querySelectorAll('.content').forEach(c => c.classList.remove('show'));
+            document.getElementById(tabName).classList.add('show');
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            evt.currentTarget.classList.add('active');
+        }
+    </script>
+</body>
+</html>
