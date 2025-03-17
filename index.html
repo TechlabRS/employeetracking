@@ -4,15 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Employee Management</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-        .tabs { display: flex; background: #007bff; padding: 10px; }
-        .tab { flex: 1; text-align: center; padding: 10px; color: white; cursor: pointer; }
-        .tab:hover, .active { background: #0056b3; }
-        .content { padding: 20px; display: none; }
-        .show { display: block; }
-        @media (max-width: 600px) { .tabs { flex-direction: column; } }
-    </style>
+    <link href="styles.css" rel="stylesheet">
 </head>
 <body>
     <div class="tabs">
@@ -23,11 +15,90 @@
         <div class="tab" onclick="switchTab(event, 'expenses')">Expense Tracker</div>
     </div>
 
-    <div id="employee" class="content show">Employee Details Content</div>
-    <div id="attendance" class="content">Attendance Content</div>
-    <div id="payments" class="content">Payments Content</div>
-    <div id="report" class="content">Monthly Report Content</div>
+    <div id="employee" class="content show">
+        
+        <h2>Employee Attendance & Payment System</h2>
+
+    <!-- Employee Management -->
+    <h3>Add Employee</h3>
+<label>Employee Name: <input type="text" id="empName" placeholder="Enter employee name"></label><br>
+<label>Phone Number: <input type="text" id="empPhone" placeholder="Enter phone number"></label><br>
+<label>Address: <input type="text" id="empAddress" placeholder="Enter address"></label><br>
+<label>Daily Pay (Default ₹600): <input type="number" id="empRate" value="600"></label><br>
+<button onclick="addEmployee()">Add Employee</button>
+<div class="export-import-buttons">
+    <button onclick="exportEmpData()">📤 Export Data</button>
+    <input type="file" id="importEmpFile" onchange="importEmpData(event)" />
+    <button onclick="clearAllData()">❌ Clear All Data</button>
+</div>
+<h3>Saved Employees</h3>
+<table>
+    <thead>
+        <tr><th>ID</th><th>Name</th><th>Phone</th><th>Address</th><th>Daily Pay</th></tr>
+    </thead>
+    <tbody id="employeeTable"></tbody>
+</table>
+    </div>
+    <div id="attendance" class="content">
+
+        <!-- Attendance Section -->
+    <h3>Mark Attendance</h3>
+    <label>Select Date: <input type="date" id="attendanceDate"></label>
+    <div id="employeeChips"></div>
+    <button onclick="saveAttendance()">Save Attendance</button>
+    </div>
+    <div id="payments" class="content">
+
+        <!-- Payment Section -->
+    <h3>Record Payment</h3>
+    <select id="paymentEmp"></select>
+    <input type="date" id="paymentDate">
+    <input type="number" id="paymentAmount" placeholder="Amount">
+    <button onclick="savePayment()">Save Payment</button>
+    <button onclick="showPayments()" style="background-color: white; color: black; border: 1px solid #ccc; padding: 10px 15px; cursor: pointer;">
+    Show Payments
+</button>
+
+
+    <!-- Payment History -->
+    <h3>Payment History</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th><th>Employee</th><th>Amount Paid</th><th>Rem-Balance</th>
+            </tr>
+        </thead>
+        <tbody id="paymentTable"></tbody>
+    </table>
+    </div>
+    <div id="report" class="content">
+
+        <!-- Reports -->
+    <h3>Monthly Summary</h3>
+    <label>Select Month: <input type="month" id="monthSelect" onchange="generateSummaryReport()"></label>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th><th>Name</th><th>Days Worked</th><th>Days Absent</th>
+                <th>Total Earnings</th><th>Paid Amount</th><th>Balance</th>
+            </tr>
+        </thead>
+        <tbody id="summaryTable"></tbody>
+    </table>
+
+    <h3>Employee Report</h3>
+    <select id="employeeSelect" onchange="generateEmployeeReport()"></select>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th><th>Present</th><th>Absent</th><th>Amount Earned</th><th>Paid Amount</th><th>Balance</th>
+            </tr>
+        </thead>
+        <tbody id="employeeReportTable"></tbody>
+    </table>
+    </div>
     <div id="expenses" class="content">Expense Tracker Content
+
         <h2>Expense & Income Tracker</h2>
 
     <!-- Add New Task Section -->
@@ -73,8 +144,8 @@
     <h3>Data Management</h3>
     <button onclick="clearData()">Clear All Data</button>
     <button onclick="exportData()">Export Data</button>
-    <input type="file" id="importFile" accept=".json">
-    <button onclick="importData()">Import Data</button>
+    <input type="file" id="importTaskFile" accept=".json">
+    <button onclick="importTaskData()">Import Data</button>
 </div>
 
 
@@ -142,6 +213,7 @@
         <h4>Total Monthly Loss: ₹<span id="totalLoss">0</span></h4>
     </div>
     </div>
+    <script src=./script.js > </script>
 
     <script>
         function switchTab(evt, tabName) {
@@ -150,312 +222,6 @@
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             evt.currentTarget.classList.add('active');
         }
-    </script>
-
-    <script>
-        //for expense tracker code
-
-        let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
-let incomes = JSON.parse(localStorage.getItem("incomes")) || [];
-let expenses = JSON.parse(localStorage.getItem("expenses")) || [];
-
-// Load data when page loads
-window.onload = function () {
-    updateTaskDropdowns();
-    updateIncomeHistory();
-    updateExpenseHistory();
-    generateReport();
-};
-
-// Save data to localStorage
-function saveData() {
-    localStorage.setItem("tasks", JSON.stringify(tasks));
-    localStorage.setItem("incomes", JSON.stringify(incomes));
-    localStorage.setItem("expenses", JSON.stringify(expenses));
-}
-
-// Add Task
-function addTask() {
-    const name = document.getElementById("taskName").value;
-    const material = document.getElementById("includesMaterial").value;
-    const startDate = document.getElementById("startDate").value;
-    const endDate = document.getElementById("endDate").value;
-
-    if (!name || !startDate || !endDate) {
-        alert("Please fill all fields.");
-        return;
-    }
-
-    const task = { name, material, startDate, endDate };
-    tasks.push(task);
-
-    saveData();
-    updateTaskDropdowns();
-    updateTaskDetailsDropdown();
-    showTaskDetails();
-    alert("Task added!");
-}
-
-// Update dropdowns with tasks
-function updateTaskDropdowns() {
-    const incomeDropdown = document.getElementById("incomeTask");
-    const expenseDropdown = document.getElementById("expenseTask");
-
-    incomeDropdown.innerHTML = "";
-    expenseDropdown.innerHTML = "";
-
-    tasks.forEach((task, index) => {
-        const option = `<option value="${index}">${task.name}</option>`;
-        incomeDropdown.innerHTML += option;
-        expenseDropdown.innerHTML += option;
-    });
-}
-
-// Function to update Task Details dropdown
-function updateTaskDetailsDropdown() {
-    const dropdown = document.getElementById("taskDetailsDropdown");
-    dropdown.innerHTML = "";
-
-    tasks.forEach((task, index) => {
-        const option = document.createElement("option");
-        option.value = index;
-        option.textContent = task.name;
-        dropdown.appendChild(option);
-    });
-
-    if (tasks.length > 0) {
-        showTaskDetails();
-    }
-}
-
-// Function to show task details in a table
-function showTaskDetails() {
-    const index = document.getElementById("taskDetailsDropdown").value;
-    if (!tasks[index]) return;
-
-    const task = tasks[index];
-
-    // Calculate total income & expenses for the selected task
-    const taskIncome = incomes
-        .filter(i => i.taskIndex == index)
-        .reduce((sum, i) => sum + i.amount, 0);
-
-    const taskExpenses = expenses
-        .filter(e => e.taskIndex == index)
-        .reduce((sum, e) => sum + e.amount, 0);
-
-    const profitLoss = taskIncome - taskExpenses;
-
-    // Update task details in the table
-    document.getElementById("taskDetailsTable").innerHTML = `
-        <tr>
-            <td>${task.name}</td>
-            <td>${task.startDate}</td>
-            <td>${task.endDate}</td>
-            <td>${task.material}</td>
-            <td>₹${taskIncome}</td>
-            <td>₹${taskExpenses}</td>
-            <td style="color: ${profitLoss >= 0 ? 'green' : 'red'};">₹${profitLoss}</td>
-        </tr>
-    `;
-}
-
-// Call function on page load
-window.onload = function () {
-    updateTaskDetailsDropdown();
-};
-
-
-// Add Income
-function addIncome() {
-    const taskIndex = document.getElementById("incomeTask").value;
-    const amount = parseFloat(document.getElementById("incomeAmount").value);
-    const date = document.getElementById("incomeDate").value;
-
-    if (!date || isNaN(amount) || amount <= 0) {
-        alert("Enter valid date and amount.");
-        return;
-    }
-
-    incomes.push({ taskIndex, amount, date });
-
-    saveData();
-    updateIncomeHistory();
-    generateReport();
-}
-
-// Add Expense
-function addExpense() {
-    const taskIndex = document.getElementById("expenseTask").value;
-    const type = document.getElementById("expenseType").value;
-    const amount = parseFloat(document.getElementById("expenseAmount").value);
-
-    if (!type || isNaN(amount) || amount <= 0) {
-        alert("Enter valid expense type and amount.");
-        return;
-    }
-
-    expenses.push({ taskIndex, type, amount });
-
-    saveData();
-    updateExpenseHistory();
-    generateReport();
-}
-
-// Update income history table
-function updateIncomeHistory() {
-    const table = document.getElementById("incomeHistory");
-    table.innerHTML = incomes.map(income => 
-        `<tr><td>${tasks[income.taskIndex]?.name || "Deleted Task"}</td><td>${income.date}</td><td>₹${income.amount}</td></tr>`
-    ).join("");
-}
-
-// Update expense history table
-function updateExpenseHistory() {
-    const table = document.getElementById("expenseHistory");
-    table.innerHTML = expenses.map(expense => 
-        `<tr><td>${tasks[expense.taskIndex]?.name || "Deleted Task"}</td><td>${expense.type}</td><td>₹${expense.amount}</td></tr>`
-    ).join("");
-}
-
-// Generate Profit/Loss Report
-function generateReport() {
-    const selectedMonth = document.getElementById("filterMonth").value;
-    if (!selectedMonth) return;
-
-    let totalProfit = 0;
-    let totalLoss = 0;
-
-    const reportTable = document.getElementById("reportTable");
-    reportTable.innerHTML = "";
-
-    tasks.forEach((task, index) => {
-        // Filter incomes and expenses based on the selected month
-        let taskIncome = incomes
-            .filter(i => i.taskIndex == index && i.date.startsWith(selectedMonth))
-            .reduce((sum, i) => sum + i.amount, 0);
-
-        let taskExpenses = expenses
-            .filter(e => e.taskIndex == index && incomes.some(i => i.taskIndex == index && i.date.startsWith(selectedMonth)))
-            .reduce((sum, e) => sum + e.amount, 0);
-
-        let profitLoss = taskIncome - taskExpenses;
-
-        if (profitLoss >= 0) {
-            totalProfit += profitLoss;
-        } else {
-            totalLoss += Math.abs(profitLoss);
-        }
-
-        // Append to report table
-        reportTable.innerHTML += `
-            <tr>
-                <td>${task.name}</td>
-                <td>${task.startDate}</td>
-                <td>${task.endDate}</td>
-                <td>₹${taskIncome}</td>
-                <td>₹${taskExpenses}</td>
-                <td style="color: ${profitLoss >= 0 ? 'green' : 'red'};">₹${profitLoss}</td>
-            </tr>
-        `;
-    });
-
-    // Update total profit/loss
-    document.getElementById("totalProfit").innerText = `₹${totalProfit}`;
-    document.getElementById("totalLoss").innerText = `₹${totalLoss}`;
-}
-
-
-// Function to clear all stored data
-function clearData() {
-    if (confirm("Are you sure you want to delete all data? This cannot be undone!")) {
-        localStorage.removeItem("tasks");
-        localStorage.removeItem("incomes");
-        localStorage.removeItem("expenses");
-        
-        tasks = [];
-        incomes = [];
-        expenses = [];
-
-        updateTaskDropdowns();
-        updateIncomeHistory();
-        updateExpenseHistory();
-        generateReport();
-        
-        alert("All data has been cleared.");
-    }
-}
-
-// Function to export data as a JSON file
-function exportData() {
-    const data = {
-        tasks,
-        incomes,
-        expenses
-    };
-    const jsonData = JSON.stringify(data, null, 4);
-    const blob = new Blob([jsonData], { type: "application/json" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "data_backup.json";
-    a.click();
-}
-
-// Function to import data from a JSON file
-function importData() {
-    const fileInput = document.getElementById("importFile");
-    if (fileInput.files.length === 0) {
-        alert("Please select a JSON file to import.");
-        return;
-    }
-
-    const file = fileInput.files[0];
-    const reader = new FileReader();
-
-    reader.onload = function (event) {
-        try {
-            const importedData = JSON.parse(event.target.result);
-            
-            if (!importedData.tasks || !importedData.incomes || !importedData.expenses) {
-                throw new Error("Invalid JSON format!");
-            }
-
-            tasks = importedData.tasks;
-            incomes = importedData.incomes;
-            expenses = importedData.expenses;
-
-            saveData();
-            updateTaskDropdowns();
-            updateIncomeHistory();
-            updateExpenseHistory();
-            generateReport();
-
-            alert("Data imported successfully!");
-        } catch (error) {
-            alert("Failed to import data: " + error.message);
-        }
-    };
-
-    reader.readAsText(file);
-}
-
-
-// Set default values to current date for all date inputs
-window.onload = function () {
-    const today = new Date();
-    const formattedDate = today.toISOString().split('T')[0]; // YYYY-MM-DD format
-    const formattedMonth = today.toISOString().slice(0, 7); // YYYY-MM format
-
-    document.getElementById("startDate").value = formattedDate;
-    document.getElementById("endDate").value = formattedDate;
-    document.getElementById("incomeDate").value = formattedDate;
-    document.getElementById("filterMonth").value = formattedMonth;
-
-    updateTaskDropdowns();
-    updateIncomeHistory();
-    updateExpenseHistory();
-    generateReport();
-};
     </script>
 </body>
 </html>
